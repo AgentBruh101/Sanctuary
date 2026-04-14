@@ -6,7 +6,7 @@ import authRoutes from './routes/authRoutes';
 import giversRoutes from './routes/giversRoutes';
 import offeringRoutes from './routes/offeringRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
-import path from 'path/win32';
+import path from 'path';
 
 dotenv.config();
 

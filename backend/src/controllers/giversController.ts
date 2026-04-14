@@ -62,7 +62,7 @@ export const createGiver = async (req: Request, res: Response): Promise<void> =>
 // The system can handle both cases seamlessly without any issues.
 export const uploadProfilePicture = async (req: Request, res: Response): Promise<void> => {
     try {
-        const giverId = req.user?.id;
+        const giverId = req.params.id;
 
         if(!req.file) {
             res.status(400).json({ error: 'No file uploaded' });
@@ -91,7 +91,7 @@ export const uploadProfilePicture = async (req: Request, res: Response): Promise
 export const deleteProfilePicture = async (req: Request, res: Response): Promise<void> => {
 
     try{
-        const giverId = req.user?.id;
+        const giverId = req.params.id;
 
         //Remove picture from database
         const updateGiver = await db.one(

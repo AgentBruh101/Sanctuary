@@ -121,6 +121,7 @@ offerings_over_time: Array<{
 }>;
 recent_activity: Array<{
     id: number;
+    giver_id: number;
     amount: number;
     date: string;
     method: string;

@@ -161,9 +161,10 @@ const GiversPage = () => {
             email: giver.email || '',
             address: giver.address || '',
             notes: giver.notes || '',
+            profile_picture: giver.profile_picture || '',
         });
         setSelectedImage(null);
-        setImagePreview(giver.profile_picture ? `http://localhost:5001/${giver.profile_picture}` : null);
+        setImagePreview(giver.profile_picture ? `http://localhost:5001${giver.profile_picture}` : null);
         setShowModal(true);
     };
 

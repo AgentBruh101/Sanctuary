@@ -34,7 +34,7 @@ router.put('/:id', updateGiver);
 router.delete('/:id', deleteGiver);
 
 // POST /api/givers/:id/profile-picture - upload profile picture
-router.post('/:id/profile-picture', upload.single('profile-picture'), uploadProfilePicture);
+router.post('/:id/profile-picture', upload.single('profile_picture'), uploadProfilePicture);
 
 // DELETE /api/givers/:id/profile-picture - delete profile picture
 router.delete('/:id/profile-picture', deleteProfilePicture);

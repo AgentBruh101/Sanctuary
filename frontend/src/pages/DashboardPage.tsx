@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { dashboardAPI } from '../utils/api';
 import type { DashboardStats } from '../utils/types';
-import { LineChart, Line, PieChart, Pie, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell, ResponsiveContainer } from 'recharts';
+import { RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, PieChart, Pie, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, ResponsiveContainer } from 'recharts';
 import { Link } from 'react-router-dom';
 import { giversAPI } from '../utils/api';
 import type { Giver } from '../utils/types';
@@ -88,6 +88,15 @@ if (isLoading) {
     );
   }
 
+  const getInitials = (name: string) =>
+    name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
+
+  const ALL_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const radarData = ALL_MONTHS.map(month => {
+    const found = stats.offerings_over_time.find(d => d.month === month);
+    return { month, total: found ? found.total : 0 };
+  });
+
   return (
   <div className="p-8">
     <div className="max-w-7xl mx-auto">
@@ -160,31 +169,30 @@ if (isLoading) {
 
       {/* Charts Row */}
 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-  {/* Offerings Over Time */}
+  {/* Offerings by Month — Radar */}
   <div className="bg-white/90 backdrop-blur-md p-6 shadow-lg border-2 border-[#D4AF37]/30">
     <h2 className="text-xl font-bold text-black mb-4 flex items-center gap-2" style={{ fontFamily: 'Newsreader, serif' }}>
       <img src="/assets/icons/reports.png" alt="Chart" className="w-5 h-5" />
-      Offerings Over Time
+      Offerings by Month
     </h2>
     <ResponsiveContainer width="100%" height={300}>
-      <LineChart data={stats.offerings_over_time}>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="month" />
-        <YAxis />
-        <Tooltip />
-        <Legend />
-        <Line type="monotone" dataKey="total" stroke="#B8860B" strokeWidth={3} name="Total Amount" />
-      </LineChart>
+      <RadarChart data={radarData}>
+        <PolarGrid />
+        <PolarAngleAxis dataKey="month" tick={{ fontSize: 12, fill: '#374151' }} />
+        <PolarRadiusAxis angle={90} tick={{ fontSize: 10, fill: '#6b7280' }} tickFormatter={(v) => `$${v}`} />
+        <Radar name="Offerings" dataKey="total" stroke="#B8860B" fill="#D4AF37" fillOpacity={0.4} />
+        <Tooltip formatter={(value: any) => [`$${Number(value).toFixed(2)}`, 'Total']} />
+      </RadarChart>
     </ResponsiveContainer>
   </div>
 
         {/* Offerings by Method */}
-        <div className="bg-white/90 backdrop-blur-md p-6 shadow-lg border-2 border-[#D4AF37]/30">
+        <div className="bg-white/90 backdrop-blur-md p-6 shadow-lg border-2 border-[#D4AF37]/30 [&_.recharts-wrapper_svg]:outline-none [&_.recharts-wrapper]:outline-none">
           <h2 className="text-xl font-bold text-black mb-4" style={{ fontFamily: 'Newsreader, serif' }}>
             Offerings by Method
           </h2>
           <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
+            <PieChart style={{ outline: 'none' }}>
               <Pie
                 data={stats.offerings_by_method}
                 cx="50%"
@@ -196,14 +204,26 @@ if (isLoading) {
                   return `${method}: $${Number(total).toFixed(0)}`;
                 }}
                 outerRadius={80}
-                fill="#8884d8"
                 dataKey="total"
               >
                 {stats.offerings_by_method.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={getMethodColor(entry.method)} />
                 ))}
               </Pie>
-              <Tooltip />
+              <Tooltip content={({ active, payload }) => {
+                if (!active || !payload?.length) return null;
+                const d = payload[0].payload;
+                const totalAll = stats.offerings_by_method.reduce((s, m) => s + m.total, 0);
+                const pct = totalAll > 0 ? ((d.total / totalAll) * 100).toFixed(1) : '0.0';
+                return (
+                  <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm">
+                    <p className="font-bold capitalize text-gray-800 mb-1">{d.method}</p>
+                    <p className="text-gray-600">{d.count} offering{d.count !== 1 ? 's' : ''}</p>
+                    <p className="font-semibold text-gray-800">${Number(d.total).toFixed(2)}</p>
+                    <p className="text-gray-500">{pct}% of total</p>
+                  </div>
+                );
+              }} />
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -215,18 +235,24 @@ if (isLoading) {
 
 
         {/* Keep all your existing charts - no changes */}
-        {/* Top Givers */}
-        <div className="bg-white/75 backdrop-blur-md p-6 shadow-lg border border-white/40">
+        {/* Top 5 Givers */}
+        <div className="bg-white/90 backdrop-blur-md p-6 shadow-lg border-2 border-[#D4AF37]/30">
           <h2 className="text-xl font-bold text-black mb-4" style={{ fontFamily: 'Newsreader, serif' }}>
-            Top Givers
+            Top 5 Givers
           </h2>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={stats.top_givers} layout="vertical">
+            <BarChart data={stats.top_givers.map(g => ({ ...g, initials: getInitials(g.name) }))}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" />
-              <YAxis dataKey="name" type="category" width={100} />
-              <Tooltip />
-              <Bar dataKey="total_amount" fill="#3b82f6" name="Total Amount" />
+              <XAxis dataKey="initials" />
+              <YAxis tickFormatter={(v) => `$${v}`} />
+              <Tooltip
+                formatter={(value: any) => [`$${Number(value).toFixed(2)}`, 'Total Donated']}
+                labelFormatter={(label) => {
+                  const giver = stats.top_givers.find(g => getInitials(g.name) === label);
+                  return giver?.name || label;
+                }}
+              />
+              <Bar dataKey="total_amount" fill="#D4AF37" name="Total Donated" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -240,7 +266,7 @@ if (isLoading) {
   <div className="space-y-3 max-h-[300px] overflow-y-auto">
     {stats.recent_activity.map((activity) => {
       // Get giver data for avatar
-      const giver = givers.find(g => g.id === activity.id);
+      const giver = givers.find(g => g.id === activity.giver_id);
       
       return (
         <div key={activity.id} className="flex items-center gap-3 border-b border-gray-200 pb-3">

@@ -71,7 +71,9 @@ export const giversAPI = {
     uploadedProfilePicture: async (id: number, file: File): Promise<Giver> => {
         const formData = new FormData();
         formData.append('profile_picture', file);
-        const response = await api.post(`/givers/${id}/profile-picture`, formData)
+        const response = await api.post(`/givers/${id}/profile-picture`, formData, {
+            headers: { 'Content-Type': undefined },
+        });
         return response.data;
     },
     deleteProfilePicture: async (id: number): Promise<Giver> => {

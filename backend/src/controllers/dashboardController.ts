@@ -38,14 +38,14 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<vo
             'SELECT g.id, g.name, COUNT(o.id) as offerring_count, COALESCE(SUM(o.amount), 0) as total_amount FROM givers g LEFT JOIN offerings o ON g.id = o.giver_id GROUP BY g.id, g.name ORDER BY total_amount DESC LIMIT 5');
 
         
-        // Offerings in 12 months time 
+        // All-time offerings aggregated by calendar month (Jan–Dec)
         const offeringsOverTime = await db.any(
-            `SELECT TO_CHAR(date, 'YYYY-MM') as month, COUNT(*) as count, COALESCE(SUM(amount), 0) as total FROM offerings WHERE date >= NOW() - INTERVAL '12 months' GROUP BY month ORDER BY month ASC`);
+            `SELECT TO_CHAR(date, 'Mon') as month, EXTRACT(MONTH FROM date) as month_num, COUNT(*) as count, COALESCE(SUM(amount), 0) as total FROM offerings GROUP BY TO_CHAR(date, 'Mon'), EXTRACT(MONTH FROM date) ORDER BY month_num ASC`);
 
         
         // Recent activity from last 10 offerings
         const recentActivity = await db.any(
-            'SELECT o.id, o.amount, o.date, o.method, o.created_at, g.name as giver_name FROM offerings o JOIN givers g ON o.giver_id = g.id ORDER BY o.created_at DESC LIMIT 10');
+            'SELECT o.id, o.giver_id, o.amount, o.date, o.method, o.created_at, g.name as giver_name FROM offerings o JOIN givers g ON o.giver_id = g.id ORDER BY o.created_at DESC LIMIT 10');
 
         res.status(200).json({
             summary: {
@@ -74,7 +74,8 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<vo
                 total: parseFloat(row.total),
             })),
             recent_activity: recentActivity.map(row => ({
-                id: row.id, 
+                id: row.id,
+                giver_id: row.giver_id,
                 amount: parseFloat(row.amount),
                 date: row.date,
                 method: row.method,
